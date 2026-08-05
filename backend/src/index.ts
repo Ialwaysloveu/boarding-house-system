@@ -5,6 +5,9 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import listingRoutes from './routes/listings';
+import roomRoutes from './routes/rooms';
+import bookingRoutes from './routes/bookings';
+import paymentRoutes from './routes/payments';
 
 dotenv.config();
 
@@ -22,6 +25,9 @@ app.use(cookieParser());
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/listings', listingRoutes);
+app.use('/api/v1', roomRoutes);
+app.use('/api/v1/bookings', bookingRoutes);
+app.use('/api/v1/payments', paymentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
