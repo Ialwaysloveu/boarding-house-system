@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TenantStatus {
+  ACTIVE
+  PAST
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  listings     Listing[]
+  tenancies    Tenant[]
+  bookings     Booking[]
+}
+
+model Listing {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  address     String
+  city        String
+  ownerId     String
+  amenities   String[]
+  images      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User     @relation(fields: [ownerId], references: [id])
+  rooms       Room[]
+}
+
+model Room {
+  id            String   @id @default(uuid())
+  listingId     String
+  name          String
+  capacity      Int
+  pricePerMonth Decimal
+  isAvailable   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tenants       Tenant[]
+  bookings      Booking[]
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  userId      String
+  roomId      String
+  moveInDate  DateTime
+  moveOutDate DateTime?
+  status      TenantStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id])
+  room        Room         @relation(fields: [roomId], references: [id])
+  payments    Payment[]
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  userId    String
+  roomId    String
+  status    BookingStatus @default(PENDING)
+  message   String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id])
+  room      Room          @relation(fields: [roomId], references: [id])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  tenantId        String
+  amount          Decimal
+  paymentDate     DateTime      @default(now())
+  status          PaymentStatus @default(PENDING)
+  referenceNumber String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+}
