@@ -68,7 +68,7 @@ export const updateBookingStatus = async (req: Request, res: Response, next: Nex
       return res.status(400).json({ message: 'Invalid status. Use APPROVED or REJECTED.' });
     }
 
-    const result = await prisma.(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({ where: { id } });
       if (!booking) return { notFound: true } as any;
 
@@ -110,4 +110,6 @@ export const updateBookingStatus = async (req: Request, res: Response, next: Nex
     next(error);
   }
 };
+
+
 
