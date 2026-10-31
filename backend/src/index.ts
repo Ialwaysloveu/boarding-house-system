@@ -13,6 +13,7 @@ import paymentRoutes from './routes/payments';
 dotenv.config();
 
 const app = express();
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 const port = process.env.PORT || 5000;
 
 app.use(helmet());
@@ -38,4 +39,5 @@ app.get('/health', (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
 
