@@ -1,50 +1,75 @@
-import React from 'react';
+'use client';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import api from '../../../lib/api';
+import { useAuth } from '../../../lib/auth';
 
-export default function ListingDetailsPage({ params }: { params: { id: string } }) {
+export default function ListingDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
+  const router = useRouter();
+  const { user } = useAuth();
+  const [listing, setListing] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [bookingStatus, setBookingStatus] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/listings/' + id);
+        setListing(res.data);
+      } catch (e: any) { setError(e.response?.data?.message || 'Failed'); }
+      finally { setLoading(false); }
+    })();
+  }, [id]);
+
+  async function book(roomId: string) {
+    if (!user) { router.push('/login'); return; }
+    try {
+      await api.post('/bookings', { roomId, message });
+      setBookingStatus('Booked! Pending approval.');
+      setSelectedRoom(null);
+    } catch (e: any) {
+      setBookingStatus(e.response?.data?.message || 'Booking failed');
+    }
+  }
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p style={{ color: 'var(--error)' }}>{error}</p>;
+  if (!listing) return null;
+
   return (
     <div style={{ maxWidth: '1000px', margin: '2rem auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Sample Boarding House {params.id}</h1>
-          <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Quezon City, Metro Manila</p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary-color)' }}>₱5,000 / month</div>
-          <span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', backgroundColor: 'var(--success)', color: 'white', borderRadius: '1rem', fontSize: '0.875rem', marginTop: '0.5rem' }}>Available</span>
-        </div>
+      <h1>{listing.name}</h1>
+      <p style={{ color: 'var(--text-secondary)' }}>{listing.city}, {listing.address}</p>
+      <p style={{ marginTop: '1rem' }}>{listing.description}</p>
+      <h2 style={{ marginTop: '1.5rem' }}>Amenities</h2>
+      <ul>{(listing.amenities || []).map((a: string, i: number) => <li key={i}>{a}</li>)}</ul>
+      <h2 style={{ marginTop: '1.5rem' }}>Rooms</h2>
+      <div style={{ display: 'grid', gap: '1rem' }}>
+        {(listing.rooms || []).map((r: any) => (
+          <div key={r.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontWeight: 600 }}>{r.name}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Capacity: {r.capacity} · ₱{Number(r.pricePerMonth).toLocaleString()}/mo</p>
+              <p>{r.isAvailable ? 'Available' : 'Unavailable'}</p>
+            </div>
+            {r.isAvailable && (
+              <button className="btn btn-primary" onClick={() => setSelectedRoom(r.id)}>Book a Room</button>
+            )}
+          </div>
+        ))}
       </div>
-
-      <div style={{ width: '100%', height: '400px', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius)', marginBottom: '2rem' }}></div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        <div>
-          <div className="card" style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>About this place</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              This is a beautiful and affordable boarding house located near major universities. It offers a quiet environment for studying and resting.
-            </p>
-          </div>
-
-          <div className="card">
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Amenities</h2>
-            <ul style={{ listStylePosition: 'inside', color: 'var(--text-secondary)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <li>Free Wi-Fi</li>
-              <li>Air Conditioning</li>
-              <li>Shared Kitchen</li>
-              <li>Laundry Area</li>
-            </ul>
-          </div>
+      {selectedRoom && (
+        <div className="card" style={{ marginTop: '1rem' }}>
+          <textarea className="input-field" placeholder="Optional message" value={message} onChange={e=>setMessage(e.target.value)} />
+          <button className="btn btn-primary" style={{ marginTop: '0.5rem' }} onClick={() => book(selectedRoom)}>Confirm Booking</button>
         </div>
-
-        <div>
-          <div className="card">
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Interested?</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Contact the owner or send an inquiry to check availability.</p>
-            <button className="btn btn-primary" style={{ width: '100%', marginBottom: '1rem' }}>Book a Room</button>
-            <button className="btn" style={{ width: '100%', border: '1px solid var(--border-color)' }}>Send Inquiry</button>
-          </div>
-        </div>
-      </div>
+      )}
+      {bookingStatus && <p style={{ marginTop: '1rem' }}>{bookingStatus}</p>}
     </div>
   );
 }

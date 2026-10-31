@@ -1,40 +1,58 @@
-import React from 'react';
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { z } from 'zod';
+import { useAuth } from '../../lib/auth';
+
+const schema = z.object({ firstName: z.string().min(1), lastName: z.string().min(1), email: z.string().email(), password: z.string().min(6) });
 
 export default function RegisterPage() {
+  const { register } = useAuth();
+  const router = useRouter();
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    const parsed = schema.safeParse(form);
+    if (!parsed.success) { setError(parsed.error.errors[0].message); return; }
+    setLoading(true);
+    try {
+      await register(form);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed');
+    } finally { setLoading(false); }
+  }
+
   return (
     <div style={{ maxWidth: '400px', margin: '4rem auto', textAlign: 'center' }}>
-      <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Create an Account</h2>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Join the best boarding house platform</p>
-      
-      <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <h2>Create an Account</h2>
+      <div className="card" style={{ padding: '2rem' }}>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>First Name</label>
-              <input type="text" placeholder="John" className="input-field" required />
+              <label htmlFor="firstName" style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>First Name</label>
+              <input id="firstName" className="input-field" value={form.firstName} onChange={e=>setForm({...form, firstName: e.target.value})} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>Last Name</label>
-              <input type="text" placeholder="Doe" className="input-field" required />
+              <label htmlFor="lastName" style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>Last Name</label>
+              <input id="lastName" className="input-field" value={form.lastName} onChange={e=>setForm({...form, lastName: e.target.value})} />
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>Email Address</label>
-            <input type="email" placeholder="john@example.com" className="input-field" required />
+            <label htmlFor="email" style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>Email Address</label>
+            <input id="email" type="email" className="input-field" value={form.email} onChange={e=>setForm({...form, email: e.target.value})} />
           </div>
           <div>
-            <label style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>Password</label>
-            <input type="password" placeholder="••••••••" className="input-field" required />
+            <label htmlFor="password" style={{ display: 'block', textAlign: 'left', marginBottom: '0.5rem', fontWeight: 500 }}>Password</label>
+            <input id="password" type="password" className="input-field" value={form.password} onChange={e=>setForm({...form, password: e.target.value})} />
           </div>
-          
-          <button type="button" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-            Sign Up
-          </button>
+          {error && <p style={{ color: 'var(--error)' }}>{error}</p>}
+          <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Loading...' : 'Sign Up'}</button>
         </form>
-        
-        <p style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Already have an account? <a href="/login" style={{ fontWeight: 600 }}>Sign in</a>
-        </p>
       </div>
     </div>
   );
