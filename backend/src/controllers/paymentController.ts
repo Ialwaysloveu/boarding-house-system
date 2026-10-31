@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
@@ -9,7 +9,7 @@ const createPaymentSchema = z.object({
   referenceNumber: z.string().optional(),
 });
 
-export const createPayment = async (req: Request, res: Response) => {
+export const createPayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = createPaymentSchema.parse(req.body);
 
@@ -29,11 +29,11 @@ export const createPayment = async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: 'Validation error', errors: error.errors });
     }
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error); next(error);
   }
 };
 
-export const getPayments = async (req: Request, res: Response) => {
+export const getPayments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authReq = req as AuthRequest;
     let payments;
@@ -53,6 +53,8 @@ export const getPayments = async (req: Request, res: Response) => {
 
     return res.json(payments);
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error); next(error);
   }
 };
+
+

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
@@ -12,18 +12,18 @@ const createListingSchema = z.object({
   images: z.array(z.string()),
 });
 
-export const getListings = async (req: Request, res: Response) => {
+export const getListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const listings = await prisma.listing.findMany({
       include: { rooms: true },
     });
     return res.json(listings);
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error); next(error);
   }
 };
 
-export const getListingById = async (req: Request, res: Response) => {
+export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const listing = await prisma.listing.findUnique({
@@ -33,11 +33,11 @@ export const getListingById = async (req: Request, res: Response) => {
     if (!listing) return res.status(404).json({ message: 'Listing not found' });
     return res.json(listing);
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error); next(error);
   }
 };
 
-export const createListing = async (req: Request, res: Response) => {
+export const createListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authReq = req as AuthRequest;
     const data = createListingSchema.parse(req.body);
@@ -52,6 +52,8 @@ export const createListing = async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: 'Validation error', errors: error.errors });
     }
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error); next(error);
   }
 };
+
+
