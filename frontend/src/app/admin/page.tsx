@@ -8,10 +8,14 @@ export default function AdminPage() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<any[]>([]);
   const [listings, setListings] = useState<any[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [tenantId, setTenantId] = useState('');
+  const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [b, l] = await Promise.all([api.get('/bookings'), api.get('/listings')]);
+    const [b, l, t] = await Promise.all([api.get('/bookings'), api.get('/listings'), api.get('/tenants')]);
+    setTenants(t.data);
     setBookings(b.data); setListings(l.data);
   }
 
@@ -49,3 +53,4 @@ export default function AdminPage() {
     </RequireAdmin>
   );
 }
+

@@ -6,12 +6,14 @@ import api from '../../lib/api';
 export default function DashboardPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const [b, p] = await Promise.all([api.get('/bookings'), api.get('/payments')]);
+        const [b, p, t] = await Promise.all([api.get('/bookings'), api.get('/payments'), api.get('/tenants')]);
+      setTenants(t.data);
         setBookings(b.data); setPayments(p.data);
       } finally { setLoading(false); }
     })();

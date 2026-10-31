@@ -6,3 +6,12 @@ dist/
 coverage/
 *.log
 .env.local
+neon.ts
+.neon
+frontend/neon.ts
+neon.ts
+frontend/neon.ts
+.neon
+neon.ts
+.neon
+dev.log

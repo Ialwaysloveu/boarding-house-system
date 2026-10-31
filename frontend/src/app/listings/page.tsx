@@ -9,11 +9,12 @@ export default function ListingsPage() {
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [city, setCity] = useState('');
+  const [page, setPage] = useState(1);
 
   async function load() {
     setLoading(true); setError('');
     try {
-      const res = await api.get('/listings', { params: { q: q || undefined, city: city || undefined } });
+      const res = await api.get('/listings', { params: { q: q || undefined, city: city || undefined, page, limit: 6 } });
       setListings(res.data);
     } catch (e: any) { setError(e.response?.data?.message || 'Failed to load'); }
     finally { setLoading(false); }
@@ -58,3 +59,4 @@ export default function ListingsPage() {
     </div>
   );
 }
+
