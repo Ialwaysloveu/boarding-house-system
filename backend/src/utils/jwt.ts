@@ -1,13 +1,21 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+if (!JWT_REFRESH_SECRET) {
+  throw new Error('JWT_REFRESH_SECRET environment variable is required');
+}
 
 export const generateAccessToken = (userId: string, role: string) => {
   return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: '15m' });
 };
 
 export const generateRefreshToken = (userId: string, role: string) => {
-  return jwt.sign({ userId, role }, process.env.JWT_REFRESH_SECRET || 'supersecretjwtrefreshkey', { expiresIn: '7d' });
+  return jwt.sign({ userId, role }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
 };
 
 export const verifyAccessToken = (token: string) => {
@@ -15,5 +23,6 @@ export const verifyAccessToken = (token: string) => {
 };
 
 export const verifyRefreshToken = (token: string) => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'supersecretjwtrefreshkey');
+  return jwt.verify(token, JWT_REFRESH_SECRET);
 };
+
