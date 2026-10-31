@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { z } from 'zod';
 import { AuthRequest } from '../middlewares/auth';
@@ -9,7 +9,14 @@ const createRoomSchema = z.object({
   pricePerMonth: z.number().positive(),
 });
 
-export const getRoomsByListing = async (req: Request, res: Response) => {
+const updateRoomSchema = z.object({
+  name: z.string().min(1).optional(),
+  capacity: z.number().int().positive().optional(),
+  pricePerMonth: z.number().positive().optional(),
+  isAvailable: z.boolean().optional(),
+});
+
+export const getRoomsByListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { listingId } = req.params;
     const rooms = await prisma.room.findMany({
@@ -17,17 +24,20 @@ export const getRoomsByListing = async (req: Request, res: Response) => {
     });
     return res.json(rooms);
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error);
+    next(error);
   }
 };
 
-export const createRoom = async (req: Request, res: Response) => {
+export const createRoom = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const authReq = req as AuthRequest;
     const { listingId } = req.params;
     const data = createRoomSchema.parse(req.body);
 
     const listing = await prisma.listing.findUnique({ where: { id: listingId } });
     if (!listing) return res.status(404).json({ message: 'Listing not found' });
+    if (listing.ownerId !== authReq.user!.userId) return res.status(403).json({ message: 'Forbidden' });
 
     const room = await prisma.room.create({
       data: {
@@ -41,29 +51,48 @@ export const createRoom = async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: 'Validation error', errors: error.errors });
     }
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error);
+    next(error);
   }
 };
 
-export const updateRoom = async (req: Request, res: Response) => {
+export const updateRoom = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
-    const room = await prisma.room.update({
+    const data = updateRoomSchema.parse(req.body);
+
+    const room = await prisma.room.findUnique({ where: { id }, include: { listing: true } });
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+    if (room.listing.ownerId !== authReq.user!.userId) return res.status(403).json({ message: 'Forbidden' });
+
+    const updated = await prisma.room.update({
       where: { id },
-      data: req.body,
+      data,
     });
-    return res.json(room);
+    return res.json(updated);
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Validation error', errors: error.errors });
+    }
+    console.error(error);
+    next(error);
   }
 };
 
-export const deleteRoom = async (req: Request, res: Response) => {
+export const deleteRoom = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
+    const room = await prisma.room.findUnique({ where: { id }, include: { listing: true } });
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+    if (room.listing.ownerId !== authReq.user!.userId) return res.status(403).json({ message: 'Forbidden' });
+
     await prisma.room.delete({ where: { id } });
     return res.json({ message: 'Room deleted' });
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error(error);
+    next(error);
   }
 };
+
