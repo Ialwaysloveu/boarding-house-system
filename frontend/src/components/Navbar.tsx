@@ -7,7 +7,9 @@ export default function Navbar() {
   return (
     <nav style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--surface-color)' }}>
       <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/" style={{ fontSize: '1.5rem', color: 'var(--primary-color)', fontWeight: 700 }}>?? BH Finder</Link>
+        <Link href="/" aria-label="Home" style={{ color: 'var(--primary-color)' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        </Link>
         <div>
           {loading ? null : user ? (
             <>
@@ -27,4 +29,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
