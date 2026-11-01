@@ -11,6 +11,7 @@ import roomRoutes from './routes/rooms';
 import bookingRoutes from './routes/bookings';
 import paymentRoutes from './routes/payments';
 import tenantRoutes from './routes/tenants';
+import feedbackRoutes from './routes/feedback';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api/v1', roomRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/tenants', tenantRoutes);
+app.use('/api/v1/listings', feedbackRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -59,6 +61,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
 
 
 
