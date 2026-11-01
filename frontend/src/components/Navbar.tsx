@@ -7,7 +7,7 @@ export default function Navbar() {
   return (
     <nav style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--surface-color)' }}>
       <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/" style={{ fontSize: '1.5rem', color: 'var(--primary-color)', fontWeight: 700 }}>BH Finder</Link>
+        <Link href="/" style={{ fontSize: '1.5rem', color: 'var(--primary-color)', fontWeight: 700 }}>?? BH Finder</Link>
         <div>
           {loading ? null : user ? (
             <>
