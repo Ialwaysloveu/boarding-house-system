@@ -9,14 +9,17 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [listings, setListings] = useState<any[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
-  const [tenantId, setTenantId] = useState('');
-  const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(true);
+  const [lName, setLName] = useState('');
+  const [lDesc, setLDesc] = useState('');
+  const [lAddr, setLAddr] = useState('');
+  const [lCity, setLCity] = useState('');
+  const [lAmen, setLAmen] = useState('');
+  const [lImgs, setLImgs] = useState('');
 
   async function load() {
     const [b, l, t] = await Promise.all([api.get('/bookings'), api.get('/listings'), api.get('/tenants')]);
-    setTenants(t.data);
-    setBookings(b.data); setListings(l.data);
+    setBookings(b.data); setListings(l.data); setTenants(t.data);
   }
 
   useEffect(() => { load().finally(()=>setLoading(false)); }, []);
@@ -32,6 +35,16 @@ export default function AdminPage() {
         <h1>Admin Dashboard</h1>
         {loading ? <p>Loading...</p> : (
           <>
+            <h2>Create Listing</h2>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.5rem',maxWidth:'400px'}}>
+              <input className="input-field" placeholder="Name" value={lName} onChange={e=>setLName(e.target.value)} />
+              <input className="input-field" placeholder="Description" value={lDesc} onChange={e=>setLDesc(e.target.value)} />
+              <input className="input-field" placeholder="Address" value={lAddr} onChange={e=>setLAddr(e.target.value)} />
+              <input className="input-field" placeholder="City" value={lCity} onChange={e=>setLCity(e.target.value)} />
+              <input className="input-field" placeholder="Amenities (comma)" value={lAmen} onChange={e=>setLAmen(e.target.value)} />
+              <input className="input-field" placeholder="Image URLs (comma)" value={lImgs} onChange={e=>setLImgs(e.target.value)} />
+              <button className="btn btn-primary" onClick={async()=>{ try { await api.post('/listings',{name:lName,description:lDesc,address:lAddr,city:lCity,amenities:lAmen.split(',').map(s=>s.trim()).filter(Boolean),images:lImgs.split(',').map(s=>s.trim()).filter(Boolean)}); alert('Created'); load(); } catch(e:any){ alert(e.response?.data?.message||'Failed'); } }}>Create Listing</button>
+            </div>
             <h2>Bookings</h2>
             <ul>
               {bookings.map(b => (
@@ -53,4 +66,3 @@ export default function AdminPage() {
     </RequireAdmin>
   );
 }
-
