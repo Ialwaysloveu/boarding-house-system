@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import prisma from '../utils/prisma';
-import { z } from 'zod';
-import { AuthRequest } from '../middlewares/auth';
+import { Request, Response, NextFunction } from "express";
+import prisma from "../utils/prisma";
+import { z } from "zod";
+import { AuthRequest } from "../middlewares/auth";
 
 const createListingSchema = z.object({
   name: z.string().min(1),
@@ -10,7 +10,11 @@ const createListingSchema = z.object({
   city: z.string().min(1),
   amenities: z.array(z.string()),
   images: z.array(z.string()),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
+
+const updateListingSchema = createListingSchema.partial();
 
 const listQuerySchema = z.object({
   q: z.string().optional(),
@@ -27,12 +31,12 @@ export const getListings = async (req: Request, res: Response, next: NextFunctio
     const where: any = {};
     if (q.q) {
       where.OR = [
-        { name: { contains: q.q, mode: 'insensitive' } },
-        { city: { contains: q.q, mode: 'insensitive' } },
+        { name: { contains: q.q, mode: "insensitive" } },
+        { city: { contains: q.q, mode: "insensitive" } },
       ];
     }
     if (q.city) {
-      where.city = { contains: q.city, mode: 'insensitive' };
+      where.city = { contains: q.city, mode: "insensitive" };
     }
     if (q.minPrice !== undefined || q.maxPrice !== undefined) {
       where.rooms = { some: { pricePerMonth: { gte: q.minPrice, lte: q.maxPrice } } };
@@ -47,7 +51,7 @@ export const getListings = async (req: Request, res: Response, next: NextFunctio
     return res.json(listings);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      return res.status(400).json({ message: "Validation error", errors: error.errors });
     }
     console.error(error); next(error);
   }
@@ -60,7 +64,7 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
       where: { id },
       include: { rooms: true },
     });
-    if (!listing) return res.status(404).json({ message: 'Listing not found' });
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
     return res.json(listing);
   } catch (error) {
     console.error(error); next(error);
@@ -80,9 +84,47 @@ export const createListing = async (req: Request, res: Response, next: NextFunct
     return res.status(201).json(listing);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: 'Validation error', errors: error.errors });
+      return res.status(400).json({ message: "Validation error", errors: error.errors });
     }
     console.error(error); next(error);
   }
 };
 
+export const updateListing = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthRequest;
+    const { id } = req.params;
+    const listing = await prisma.listing.findUnique({ where: { id } });
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
+    if (listing.ownerId !== authReq.user!.userId && authReq.user?.role !== "ADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const data = updateListingSchema.parse(req.body);
+    const updated = await prisma.listing.update({
+      where: { id },
+      data,
+    });
+    return res.json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation error", errors: error.errors });
+    }
+    console.error(error); next(error);
+  }
+};
+
+export const deleteListing = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthRequest;
+    const { id } = req.params;
+    const listing = await prisma.listing.findUnique({ where: { id } });
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
+    if (listing.ownerId !== authReq.user!.userId && authReq.user?.role !== "ADMIN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    await prisma.listing.delete({ where: { id } });
+    return res.json({ message: "Listing deleted" });
+  } catch (error) {
+    console.error(error); next(error);
+  }
+};
