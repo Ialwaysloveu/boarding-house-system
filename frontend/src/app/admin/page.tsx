@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { RequireAdmin } from "../../components/Guard";
 import api from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import dynamic from "next/dynamic";
+const MapPicker = dynamic(() => import("../../components/MapPicker"), { ssr: false });
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -18,8 +20,8 @@ export default function AdminPage() {
   const [lCity, setLCity] = useState("");
   const [lAmen, setLAmen] = useState("");
   const [lImgs, setLImgs] = useState("");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
 
   async function load() {
     const [b, l, t] = await Promise.all([api.get("/bookings"), api.get("/listings"), api.get("/tenants")]);
@@ -42,6 +44,11 @@ export default function AdminPage() {
     }
   }
 
+  function handleMapChange(latitude: number, longitude: number) {
+    setLat(latitude);
+    setLng(longitude);
+  }
+
   async function createListing() {
     try {
       await api.post("/listings", {
@@ -51,8 +58,8 @@ export default function AdminPage() {
         city: lCity,
         amenities: lAmen.split(",").map((s) => s.trim()).filter(Boolean),
         images: lImgs.split(",").map((s) => s.trim()).filter(Boolean),
-        latitude: lat ? Number(lat) : undefined,
-        longitude: lng ? Number(lng) : undefined,
+        latitude: lat,
+        longitude: lng,
       });
       alert("Created");
       setShowCreate(false);
@@ -62,8 +69,8 @@ export default function AdminPage() {
       setLCity("");
       setLAmen("");
       setLImgs("");
-      setLat("");
-      setLng("");
+      setLat(null);
+      setLng(null);
       await load();
     } catch (e: any) {
       alert(e.response?.data?.message || "Failed");
@@ -79,8 +86,8 @@ export default function AdminPage() {
         city: lCity,
         amenities: lAmen.split(",").map((s) => s.trim()).filter(Boolean),
         images: lImgs.split(",").map((s) => s.trim()).filter(Boolean),
-        latitude: lat ? Number(lat) : undefined,
-        longitude: lng ? Number(lng) : undefined,
+        latitude: lat,
+        longitude: lng,
       });
       alert("Updated");
       setEditingId(null);
@@ -90,8 +97,8 @@ export default function AdminPage() {
       setLCity("");
       setLAmen("");
       setLImgs("");
-      setLat("");
-      setLng("");
+      setLat(null);
+      setLng(null);
       await load();
     } catch (e: any) {
       alert(e.response?.data?.message || "Failed");
@@ -117,8 +124,8 @@ export default function AdminPage() {
     setLCity(l.city);
     setLAmen(l.amenities?.join(", "));
     setLImgs(l.images?.join(", "));
-    setLat(l.latitude?.toString() || "");
-    setLng(l.longitude?.toString() || "");
+    setLat(l.latitude);
+    setLng(l.longitude);
   }
 
   function cancelEdit() {
@@ -129,8 +136,8 @@ export default function AdminPage() {
     setLCity("");
     setLAmen("");
     setLImgs("");
-    setLat("");
-    setLng("");
+    setLat(null);
+    setLng(null);
   }
 
   const myListings = listings.filter((l) => l.ownerId === user?.id);
@@ -178,9 +185,12 @@ export default function AdminPage() {
                   <input className="input-field" placeholder="City" value={lCity} onChange={(e) => setLCity(e.target.value)} />
                   <input className="input-field" placeholder="Amenities (comma separated)" value={lAmen} onChange={(e) => setLAmen(e.target.value)} />
                   <input className="input-field" placeholder="Image URLs (comma separated)" value={lImgs} onChange={(e) => setLImgs(e.target.value)} />
-                  <div style={{ display: "flex", gap: "1rem" }}>
-                    <input className="input-field" placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} />
-                    <input className="input-field" placeholder="Longitude" value={lng} onChange={(e) => setLng(e.target.value)} />
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>Location (click on map to set)</label>
+                    <MapPicker lat={lat} lng={lng} onChange={handleMapChange} />
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+                      {lat !== null && lng !== null ? `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}` : "Click map to set location"}
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: "0.5rem" }}>
                     <button className="btn btn-primary" onClick={createListing}>Create</button>
@@ -205,9 +215,12 @@ export default function AdminPage() {
                         <input className="input-field" placeholder="City" value={lCity} onChange={(e) => setLCity(e.target.value)} />
                         <input className="input-field" placeholder="Amenities (comma)" value={lAmen} onChange={(e) => setLAmen(e.target.value)} />
                         <input className="input-field" placeholder="Images (comma)" value={lImgs} onChange={(e) => setLImgs(e.target.value)} />
-                        <div style={{ display: "flex", gap: "1rem" }}>
-                          <input className="input-field" placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} />
-                          <input className="input-field" placeholder="Longitude" value={lng} onChange={(e) => setLng(e.target.value)} />
+                        <div style={{ marginTop: "0.5rem" }}>
+                          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>Location (click on map to set)</label>
+                          <MapPicker lat={lat} lng={lng} onChange={handleMapChange} />
+                          <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+                            {lat !== null && lng !== null ? `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}` : "Click map to set location"}
+                          </div>
                         </div>
                         <div style={{ display: "flex", gap: "0.5rem" }}>
                           <button className="btn btn-primary" onClick={() => updateListing(l.id)}>Save</button>
